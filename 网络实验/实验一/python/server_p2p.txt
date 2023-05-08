@@ -1,0 +1,112 @@
+import socket
+from threading import Thread
+
+BUFFER_SIZE = 1024
+
+class Server():
+    def __init__(self):
+        #---------------------------------------------
+        # TODO： 初始化服务端socket
+        self.server =socket.socket() 
+        #---------------------------------------------
+        self.ip = "127.0.0.1"         # 服务器IP为local host，即本机
+        self.port = self.set_port()   # 通过命令行标准输入，设置服务器端口
+
+        #---------------------------------------------
+        # TODO： 为服务socket绑定IP与端口
+        self.server.bind((self.ip,self.port))
+        #---------------------------------------------
+        self.mode = self.get_mode()
+
+        #---------------------------------------------
+        # TODO： 设置服务端默认timeout时间(必须有)
+        self.server.settimeout(600)
+        #---------------------------------------------
+        self.max_clients = self.set_max_clients()  
+
+        #---------------------------------------------
+        # TODO： 设置服务端最大连接的客户端数量(必须有)
+        self.server.listen(self.max_clients)
+        #---------------------------------------------
+
+
+        if self.mode == 'p2p':
+            # 必做：实现p2p聊天
+            self.start_p2p_listen()
+        else:
+            # 选做：实现聊天室服务器功能
+            self.ip_client = {}
+            self.start_hub_listen()
+
+    def set_port(self):
+        print("请输入聊天服务器端口")
+        port = input()
+        return int(port)
+
+    def get_mode(self):
+        print("请输入服务器工作模式(p2p,hub)")
+        mode = input()
+        return mode
+
+    def set_max_clients(self):
+        print("请输入最大允许连接的客户端数量")
+        max_clients = input()
+        return int(max_clients)
+
+    ################################################################################
+    # 工作方式1：p2p连接服务器
+    def start_p2p_listen(self):
+        #---------------------------------------------
+        # TODO： 等待建立连接(必须有), 当用户连接时打印消息，如(ip, port)已成功连接
+        # 提示：需要循环结构
+        # self.server.XXXXXXXX(params)
+        #---------------------------------------------
+        client_socket,client_addr=self.server.accept()
+        client_ip,client_port=client_socket.getsockname()
+        print(client_ip)
+        print("     ")
+        print(str(client_port))
+        print("("+client_ip+","+str(client_port)+")成功连接")
+        #---------------------------------------------
+        # TODO： 为接受消息和发送消息分别开启两个线程，实现双工聊天
+        # 此处仅需替换param位置的参数；根据上一个位置的返回值仅需更改
+        Thread(target=self.p2p_send_msg,args=(client_socket,)).start()
+        Thread(target=self.p2p_recv_msg,args=(client_socket,)).start()
+        #---------------------------------------------
+        a = 1
+
+    def p2p_send_msg(self,client):
+        #---------------------------------------------
+        # TODO： 实现发送消息功能
+        # 提示1：字符串必须先encode才能发送
+        # 提示2：获得标准输入参考本例程其他函数
+        # 提示3：需要循环结构
+        # 提示4：当recv_msg收到用户退出通知，并关闭socket后，此子进程会报错，需要通过try except进行异常处理
+        #---------------------------------------------
+        try:
+            client_ip,client_port=client.getsockname()
+            # 可能报错的语句
+            while 1:
+                msg = input()
+                client.send(msg.encode())
+        except:
+            # 如果报错了，则执行下面的内容（退出循环）
+            print("("+client_ip+","+client_port+")退出连接")
+    
+    def p2p_recv_msg(self,client):
+        #---------------------------------------------
+        # TODO： 实现接受消息功能，客户端发送q则退出，并打印退出消息，如(ip, port)已退出聊天
+        # 提示1：接收到的消息必须先decode才能转换为字符串
+        # 提示2：打印到标准输出参考本例程其他函数
+        # 提示3：需要循环结构
+        #---------------------------------------------
+        client_ip,client_port=client.getsockname()
+        while 1:
+            msg=client.recv(BUFFER_SIZE).decode()
+            if msg=='q':
+                print("("+client_ip+","+str(client_port)+")已退出聊天")
+                break
+            print(msg)
+            
+            
+
